@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/docs/" />
+  <Folder Name="/src/">
+    <Project Path="src/CommandTrack.Api/CommandTrack.Api.csproj" />
+    <Project Path="src/CommandTrack.Domain/CommandTrack.Domain.csproj" />
+    <Project Path="src/CommandTrack.HQ/CommandTrack.HQ.csproj" />
+    <Project Path="src/CommandTrack.Infrastructure/CommandTrack.Infrastructure.csproj" />
+    <Project Path="src/CommandTrack.PlatformSimulator/CommandTrack.PlatformSimulator.csproj" />
+    <Project Path="src/CommandTrack.Shared/CommandTrack.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CommandTrack.Api.Tests/CommandTrack.Api.Tests.csproj" />
+  </Folder>
+</Solution>

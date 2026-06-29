@@ -1,0 +1,6 @@
+@CommandTrack.Api_HostAddress = http://localhost:5076
+
+GET {{CommandTrack.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

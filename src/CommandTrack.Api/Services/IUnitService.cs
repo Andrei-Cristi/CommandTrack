@@ -4,9 +4,15 @@ namespace CommandTrack.Api.Services;
 
 public interface IUnitService
 {
-    IReadOnlyCollection<OperationalUnit> GetAll();
+    Task<IReadOnlyCollection<OperationalUnit>> GetAllAsync(
+        CancellationToken cancellationToken = default);
 
-    OperationalUnit? GetById(Guid id);
+    Task<OperationalUnit?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
 
-    OperationalUnit Create(string callSign, string type);
+    Task<OperationalUnit> CreateAsync(
+        string callSign,
+        string type,
+        CancellationToken cancellationToken = default);
 }

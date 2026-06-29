@@ -17,22 +17,27 @@ public sealed class UnitsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<UnitDto>), StatusCodes.Status200OK)]
-    public ActionResult<IEnumerable<UnitDto>> GetAll()
+    [ProducesResponseType(
+        typeof(IEnumerable<UnitDto>),
+        StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<UnitDto>>> GetAll(
+        CancellationToken cancellationToken)
     {
-        IEnumerable<UnitDto> units = _unitService
-            .GetAll()
-            .Select(MapToDto);
+        IReadOnlyCollection<OperationalUnit> units =
+            await _unitService.GetAllAsync(cancellationToken);
 
-        return Ok(units);
+        return Ok(units.Select(MapToDto));
     }
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(UnitDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<UnitDto> GetById(Guid id)
+    public async Task<ActionResult<UnitDto>> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        OperationalUnit? unit = _unitService.GetById(id);
+        OperationalUnit? unit =
+            await _unitService.GetByIdAsync(id, cancellationToken);
 
         if (unit is null)
         {
@@ -46,13 +51,17 @@ public sealed class UnitsController : ControllerBase
     [ProducesResponseType(typeof(UnitDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public ActionResult<UnitDto> Create(CreateUnitRequest request)
+    public async Task<ActionResult<UnitDto>> Create(
+        CreateUnitRequest request,
+        CancellationToken cancellationToken)
     {
         try
         {
-            OperationalUnit unit = _unitService.Create(
-                request.CallSign,
-                request.Type);
+            OperationalUnit unit =
+                await _unitService.CreateAsync(
+                    request.CallSign,
+                    request.Type,
+                    cancellationToken);
 
             UnitDto response = MapToDto(unit);
 

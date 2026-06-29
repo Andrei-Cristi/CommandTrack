@@ -45,4 +45,8 @@ public sealed class OperationalUnit
     {
         Status = status;
     }
+    public void UpdateStatus(UnitStatus status)
+    {
+        Status = status;
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using CommandTrack.Api.Services;
 using CommandTrack.Domain.Entities;
+using CommandTrack.Domain.Enums;
 using CommandTrack.Shared.Units;
 using Microsoft.AspNetCore.Mvc;
 
@@ -37,7 +38,9 @@ public sealed class UnitsController : ControllerBase
         CancellationToken cancellationToken)
     {
         OperationalUnit? unit =
-            await _unitService.GetByIdAsync(id, cancellationToken);
+            await _unitService.GetByIdAsync(
+                id,
+                cancellationToken);
 
         if (unit is null)
         {
@@ -92,6 +95,66 @@ public sealed class UnitsController : ControllerBase
 
             return Conflict(problem);
         }
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [ProducesResponseType(typeof(UnitDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UnitDto>> UpdateStatus(
+        Guid id,
+        UpdateUnitStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Status))
+        {
+            ProblemDetails problem = new()
+            {
+                Title = "The status could not be updated.",
+                Detail = "Status is required.",
+                Status = StatusCodes.Status400BadRequest
+            };
+
+            return BadRequest(problem);
+        }
+
+        bool validStatus = Enum.TryParse(
+            request.Status,
+            ignoreCase: true,
+            out UnitStatus status);
+
+        if (!validStatus ||
+            !Enum.IsDefined(typeof(UnitStatus), status))
+        {
+            ProblemDetails problem = new()
+            {
+                Title = "The status could not be updated.",
+                Detail = $"'{request.Status}' is not a valid unit status.",
+                Status = StatusCodes.Status400BadRequest
+            };
+
+            return BadRequest(problem);
+        }
+
+        OperationalUnit? unit =
+            await _unitService.UpdateStatusAsync(
+                id,
+                status,
+                cancellationToken);
+
+        if (unit is null)
+        {
+            ProblemDetails problem = new()
+            {
+                Title = "Unit not found.",
+                Detail = $"No unit with id '{id}' was found.",
+                Status = StatusCodes.Status404NotFound
+            };
+
+            return NotFound(problem);
+        }
+
+        return Ok(MapToDto(unit));
     }
 
     private static UnitDto MapToDto(OperationalUnit unit)

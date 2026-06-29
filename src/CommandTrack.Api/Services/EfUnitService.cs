@@ -1,4 +1,5 @@
 ﻿using CommandTrack.Domain.Entities;
+using CommandTrack.Domain.Enums;
 using CommandTrack.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -54,6 +55,28 @@ public sealed class EfUnitService : IUnitService
         OperationalUnit unit = new(normalizedCallSign, type);
 
         _dbContext.OperationalUnits.Add(unit);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return unit;
+    }
+
+    public async Task<OperationalUnit?> UpdateStatusAsync(
+        Guid id,
+        UnitStatus status,
+        CancellationToken cancellationToken = default)
+    {
+        OperationalUnit? unit =
+            await _dbContext.OperationalUnits.FirstOrDefaultAsync(
+                unit => unit.Id == id,
+                cancellationToken);
+
+        if (unit is null)
+        {
+            return null;
+        }
+
+        unit.UpdateStatus(status);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

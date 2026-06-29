@@ -1,4 +1,5 @@
 ﻿using CommandTrack.Domain.Entities;
+using CommandTrack.Domain.Enums;
 
 namespace CommandTrack.Api.Services;
 
@@ -10,6 +11,11 @@ public interface IUnitService
     Task<OperationalUnit?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+    Task<OperationalUnit?> UpdateStatusAsync(
+        Guid id,
+    UnitStatus status,
+    CancellationToken cancellationToken = default);
+    
 
     Task<OperationalUnit> CreateAsync(
         string callSign,

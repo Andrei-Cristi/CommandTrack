@@ -78,6 +78,8 @@ public partial class MainWindow : Window
         }
 
         _isLoading = true;
+        Guid? selectedUnitId =
+    (UnitsDataGrid.SelectedItem as UnitDashboardRow)?.Id;
         RefreshButton.IsEnabled = false;
         StatusTextBlock.Text = "Loading operational units...";
 
@@ -107,6 +109,13 @@ public partial class MainWindow : Window
             foreach (UnitDashboardRow row in rows)
             {
                 _units.Add(row);
+            }
+            
+            if (selectedUnitId.HasValue)
+            {
+                UnitsDataGrid.SelectedItem =
+                    _units.FirstOrDefault(
+                        unit => unit.Id == selectedUnitId.Value);
             }
 
             int onlineCount =
@@ -185,33 +194,21 @@ public sealed class UnitDashboardRow
         UnitDto unit,
         UnitTelemetryDto? telemetry)
     {
+        Id = unit.Id;
         CallSign = unit.CallSign;
         Type = unit.Type;
         Status = unit.Status;
+        CreatedAtUtc = unit.CreatedAtUtc;
+        LastSeenAtUtc = unit.LastSeenAtUtc;
 
-        BatteryDisplay =
-            telemetry is null
-                ? "—"
-                : $"{telemetry.BatteryPercent:F1}%";
-
-        SpeedDisplay =
-            telemetry is null
-                ? "—"
-                : $"{telemetry.SpeedKph:F1} km/h";
-
-        PositionDisplay =
-            telemetry is null
-                ? "—"
-                : $"{telemetry.Latitude:F6}, " +
-                  $"{telemetry.Longitude:F6}";
-
-        LastSeenDisplay =
-            unit.LastSeenAtUtc.HasValue
-                ? unit.LastSeenAtUtc.Value
-                    .ToLocalTime()
-                    .ToString("dd.MM.yyyy HH:mm:ss")
-                : "Never";
+        BatteryPercent = telemetry?.BatteryPercent;
+        SpeedKph = telemetry?.SpeedKph;
+        Latitude = telemetry?.Latitude;
+        Longitude = telemetry?.Longitude;
+        TelemetryRecordedAtUtc = telemetry?.RecordedAtUtc;
     }
+
+    public Guid Id { get; }
 
     public string CallSign { get; }
 
@@ -219,11 +216,54 @@ public sealed class UnitDashboardRow
 
     public string Status { get; }
 
-    public string BatteryDisplay { get; }
+    public DateTimeOffset CreatedAtUtc { get; }
 
-    public string SpeedDisplay { get; }
+    public DateTimeOffset? LastSeenAtUtc { get; }
 
-    public string PositionDisplay { get; }
+    public double? BatteryPercent { get; }
 
-    public string LastSeenDisplay { get; }
+    public double? SpeedKph { get; }
+
+    public double? Latitude { get; }
+
+    public double? Longitude { get; }
+
+    public DateTimeOffset? TelemetryRecordedAtUtc { get; }
+
+    public string IdDisplay =>
+        Id.ToString();
+
+    public string BatteryDisplay =>
+        BatteryPercent.HasValue
+            ? $"{BatteryPercent.Value:F1}%"
+            : "—";
+
+    public string SpeedDisplay =>
+        SpeedKph.HasValue
+            ? $"{SpeedKph.Value:F1} km/h"
+            : "—";
+
+    public string PositionDisplay =>
+        Latitude.HasValue && Longitude.HasValue
+            ? $"{Latitude.Value:F6}, {Longitude.Value:F6}"
+            : "—";
+
+    public string CreatedAtDisplay =>
+        CreatedAtUtc
+            .ToLocalTime()
+            .ToString("dd.MM.yyyy HH:mm:ss");
+
+    public string LastSeenDisplay =>
+        LastSeenAtUtc.HasValue
+            ? LastSeenAtUtc.Value
+                .ToLocalTime()
+                .ToString("dd.MM.yyyy HH:mm:ss")
+            : "Never";
+
+    public string TelemetryRecordedAtDisplay =>
+        TelemetryRecordedAtUtc.HasValue
+            ? TelemetryRecordedAtUtc.Value
+                .ToLocalTime()
+                .ToString("dd.MM.yyyy HH:mm:ss")
+            : "No telemetry";
 }

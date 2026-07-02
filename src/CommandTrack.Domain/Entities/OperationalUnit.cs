@@ -14,6 +14,8 @@ public sealed class OperationalUnit
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
+    public DateTimeOffset? LastSeenAtUtc { get; private set; }
+
     private OperationalUnit()
     {
     }
@@ -39,14 +41,17 @@ public sealed class OperationalUnit
         Type = type.Trim();
         Status = UnitStatus.Offline;
         CreatedAtUtc = DateTimeOffset.UtcNow;
+        LastSeenAtUtc = null;
     }
 
-    public void ChangeStatus(UnitStatus status)
-    {
-        Status = status;
-    }
     public void UpdateStatus(UnitStatus status)
     {
         Status = status;
+    }
+
+    public void RegisterHeartbeat()
+    {
+        LastSeenAtUtc = DateTimeOffset.UtcNow;
+        Status = UnitStatus.Online;
     }
 }

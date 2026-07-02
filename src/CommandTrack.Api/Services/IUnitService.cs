@@ -15,7 +15,10 @@ public interface IUnitService
         Guid id,
     UnitStatus status,
     CancellationToken cancellationToken = default);
-    
+
+    Task<OperationalUnit?> RegisterHeartbeatAsync(
+    Guid id,
+    CancellationToken cancellationToken = default);
 
     Task<OperationalUnit> CreateAsync(
         string callSign,

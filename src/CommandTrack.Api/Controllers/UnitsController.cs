@@ -8,6 +8,7 @@ namespace CommandTrack.Api.Controllers;
 
 [ApiController]
 [Route("api/units")]
+
 public sealed class UnitsController : ControllerBase
 {
     private readonly IUnitService _unitService;
@@ -54,6 +55,32 @@ public sealed class UnitsController : ControllerBase
     [ProducesResponseType(typeof(UnitDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [HttpPost("{id:guid}/heartbeat")]
+    [ProducesResponseType(typeof(UnitDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UnitDto>> RegisterHeartbeat(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        OperationalUnit? unit =
+            await _unitService.RegisterHeartbeatAsync(
+                id,
+                cancellationToken);
+
+        if (unit is null)
+        {
+            ProblemDetails problem = new()
+            {
+                Title = "Unit not found.",
+                Detail = $"No unit with id '{id}' was found.",
+                Status = StatusCodes.Status404NotFound
+            };
+
+            return NotFound(problem);
+        }
+
+        return Ok(MapToDto(unit));
+    }
     public async Task<ActionResult<UnitDto>> Create(
         CreateUnitRequest request,
         CancellationToken cancellationToken)
@@ -164,6 +191,7 @@ public sealed class UnitsController : ControllerBase
             unit.CallSign,
             unit.Type,
             unit.Status.ToString(),
-            unit.CreatedAtUtc);
+            unit.CreatedAtUtc,
+            unit.LastSeenAtUtc);
     }
 }

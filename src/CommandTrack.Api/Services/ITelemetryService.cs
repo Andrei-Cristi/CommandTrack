@@ -14,6 +14,11 @@ public interface ITelemetryService
         CancellationToken cancellationToken = default);
 
     Task<UnitTelemetry?> GetLatestAsync(
-    Guid unitId,
-    CancellationToken cancellationToken = default);
+        Guid unitId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<UnitTelemetry>?> GetHistoryAsync(
+        Guid unitId,
+        int limit,
+        CancellationToken cancellationToken = default);
 }

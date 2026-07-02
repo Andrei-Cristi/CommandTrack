@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="CommandTrack HQ"
         Width="1400"
-        Height="760"
+        Height="900"
         MinWidth="1100"
-        MinHeight="650"
+        MinHeight="760"
         WindowStartupLocation="CenterScreen"
         Background="#10141C">
 
@@ -389,6 +389,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="230"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -779,8 +780,107 @@
             </Border>
         </Grid>
 
+        <!-- Telemetry history -->
+        <Border Grid.Row="3"
+        Margin="0,16,0,0"
+        Background="#151B26"
+        BorderBrush="#2A3447"
+        BorderThickness="1"
+        CornerRadius="10"
+        Padding="18">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="TELEMETRY HISTORY"
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#8F9BAD"/>
+
+                    <TextBlock x:Name="TelemetryHistoryStatusTextBlock"
+                       Grid.Column="1"
+                       Text="Select a unit to view its history."
+                       FontSize="12"
+                       Foreground="#8F9BAD"/>
+                </Grid>
+
+                <Grid Grid.Row="1"
+              Margin="0,14,0,0">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Battery chart -->
+                    <Border Grid.Column="0"
+                    Background="#1A2130"
+                    BorderBrush="#2A3447"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="BATTERY (%)"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#8F9BAD"/>
+
+                            <Canvas x:Name="BatteryChartCanvas"
+                            Grid.Row="1"
+                            Margin="0,8,0,0"
+                            MinHeight="130"
+                            ClipToBounds="True"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Speed chart -->
+                    <Border Grid.Column="2"
+                    Background="#1A2130"
+                    BorderBrush="#2A3447"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="SPEED (KM/H)"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#8F9BAD"/>
+
+                            <Canvas x:Name="SpeedChartCanvas"
+                            Grid.Row="1"
+                            Margin="0,8,0,0"
+                            MinHeight="130"
+                            ClipToBounds="True"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
         <!-- Footer -->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="4"
               Margin="0,14,0,0">
 
             <Grid.ColumnDefinitions>

@@ -46,14 +46,50 @@ public sealed class EfTelemetryService : ITelemetryService
 
         return telemetry;
     }
+
     public async Task<UnitTelemetry?> GetLatestAsync(
-    Guid unitId,
-    CancellationToken cancellationToken = default)
+        Guid unitId,
+        CancellationToken cancellationToken = default)
     {
         return await _dbContext.UnitTelemetry
             .AsNoTracking()
             .Where(telemetry => telemetry.UnitId == unitId)
-            .OrderByDescending(telemetry => telemetry.RecordedAtUtc)
+            .OrderByDescending(
+                telemetry => telemetry.RecordedAtUtc)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<UnitTelemetry>?> GetHistoryAsync(
+        Guid unitId,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        bool unitExists =
+            await _dbContext.OperationalUnits
+                .AsNoTracking()
+                .AnyAsync(
+                    unit => unit.Id == unitId,
+                    cancellationToken);
+
+        if (!unitExists)
+        {
+            return null;
+        }
+
+        int normalizedLimit = Math.Clamp(limit, 1, 200);
+
+        List<UnitTelemetry> telemetryHistory =
+            await _dbContext.UnitTelemetry
+                .AsNoTracking()
+                .Where(telemetry =>
+                    telemetry.UnitId == unitId)
+                .OrderByDescending(telemetry =>
+                    telemetry.RecordedAtUtc)
+                .Take(normalizedLimit)
+                .ToListAsync(cancellationToken);
+
+        telemetryHistory.Reverse();
+
+        return telemetryHistory;
     }
 }

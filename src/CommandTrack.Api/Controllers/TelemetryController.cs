@@ -103,6 +103,39 @@ public sealed class TelemetryController : ControllerBase
         return Ok(MapToDto(telemetry));
     }
 
+    [HttpGet("history")]
+    [ProducesResponseType(
+    typeof(IEnumerable<UnitTelemetryDto>),
+    StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<UnitTelemetryDto>>> GetHistory(
+    Guid unitId,
+    [FromQuery] int limit = 50,
+    CancellationToken cancellationToken = default)
+    {
+        IReadOnlyCollection<UnitTelemetry>? history =
+            await _telemetryService.GetHistoryAsync(
+                unitId,
+                limit,
+                cancellationToken);
+
+        if (history is null)
+        {
+            ProblemDetails problem = new()
+            {
+                Title = "Unit not found.",
+                Detail = $"No unit with id '{unitId}' was found.",
+                Status = StatusCodes.Status404NotFound
+            };
+
+            return NotFound(problem);
+        }
+
+        IEnumerable<UnitTelemetryDto> response =
+            history.Select(MapToDto);
+
+        return Ok(response);
+    }
     private static UnitTelemetryDto MapToDto(
         UnitTelemetry telemetry)
     {

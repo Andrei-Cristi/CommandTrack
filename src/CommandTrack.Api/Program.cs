@@ -14,6 +14,8 @@ builder.Services.AddDbContext<CommandTrackDbContext>(options =>
 
 builder.Services.AddScoped<IUnitService, EfUnitService>();
 
+builder.Services.AddScoped<ITelemetryService, EfTelemetryService>();
+
 builder.Services.AddHostedService<UnitOfflineMonitorService>();
 
 builder.Services.AddOpenApi();

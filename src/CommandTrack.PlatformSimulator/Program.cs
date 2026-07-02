@@ -1,11 +1,16 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using CommandTrack.Shared.Telemetry;
 using CommandTrack.Shared.Units;
 
 const string apiBaseUrl = "http://localhost:5076/";
 
 Guid unitId = Guid.Parse(
     "89da676e-384e-4bb0-adec-1d4bfac22c8b");
+
+double batteryPercent = 95.0;
+double latitude = 44.4268;
+double longitude = 26.1025;
 
 using HttpClient httpClient = new()
 {
@@ -24,7 +29,7 @@ Console.CancelKeyPress += (_, eventArgs) =>
 Console.WriteLine("CommandTrack Platform Simulator");
 Console.WriteLine($"Unit ID: {unitId}");
 Console.WriteLine($"API: {apiBaseUrl}");
-Console.WriteLine("Sending a heartbeat every 5 seconds.");
+Console.WriteLine("Sending heartbeat and telemetry every 5 seconds.");
 Console.WriteLine("Press Ctrl+C to stop.");
 Console.WriteLine();
 
@@ -32,53 +37,91 @@ while (!cancellationTokenSource.Token.IsCancellationRequested)
 {
     try
     {
-        using HttpResponseMessage response =
+        using HttpResponseMessage heartbeatResponse =
             await httpClient.PostAsync(
                 $"api/units/{unitId}/heartbeat",
                 content: null,
                 cancellationTokenSource.Token);
 
-        if (response.IsSuccessStatusCode)
-        {
-            UnitDto? unit =
-                await response.Content.ReadFromJsonAsync<UnitDto>(
-                    cancellationToken:
-                        cancellationTokenSource.Token);
-
-            Console.WriteLine(
-                $"[{DateTimeOffset.Now:HH:mm:ss}] " +
-                $"Heartbeat sent | " +
-                $"{unit?.CallSign} | " +
-                $"Status: {unit?.Status} | " +
-                $"Last seen: {unit?.LastSeenAtUtc:O}");
-        }
-        else if (response.StatusCode == HttpStatusCode.NotFound)
+        if (heartbeatResponse.StatusCode == HttpStatusCode.NotFound)
         {
             Console.WriteLine(
                 $"[{DateTimeOffset.Now:HH:mm:ss}] " +
                 $"Unit '{unitId}' was not found.");
-        }
-        else
-        {
-            string errorContent =
-                await response.Content.ReadAsStringAsync(
-                    cancellationTokenSource.Token);
 
-            Console.WriteLine(
-                $"[{DateTimeOffset.Now:HH:mm:ss}] " +
-                $"Heartbeat failed: " +
-                $"{(int)response.StatusCode} " +
-                $"{response.ReasonPhrase}");
-
-            Console.WriteLine(errorContent);
+            break;
         }
+
+        heartbeatResponse.EnsureSuccessStatusCode();
+
+        UnitDto? unit =
+            await heartbeatResponse.Content
+                .ReadFromJsonAsync<UnitDto>(
+                    cancellationToken:
+                        cancellationTokenSource.Token);
+
+        batteryPercent = Math.Max(
+            0,
+            batteryPercent -
+            Random.Shared.NextDouble() * 0.25);
+
+        latitude +=
+            (Random.Shared.NextDouble() - 0.5) * 0.0002;
+
+        longitude +=
+            (Random.Shared.NextDouble() - 0.5) * 0.0002;
+
+        double speedKph =
+            8 + Random.Shared.NextDouble() * 15;
+
+        CreateUnitTelemetryRequest telemetryRequest = new(
+            BatteryPercent: Math.Round(batteryPercent, 2),
+            Latitude: Math.Round(latitude, 6),
+            Longitude: Math.Round(longitude, 6),
+            SpeedKph: Math.Round(speedKph, 2),
+            RecordedAtUtc: DateTimeOffset.UtcNow);
+
+        Console.WriteLine(
+    $"REQUEST => Battery: {telemetryRequest.BatteryPercent:F2}% | " +
+    $"Position: {telemetryRequest.Latitude:F6}, " +
+    $"{telemetryRequest.Longitude:F6} | " +
+    $"Speed: {telemetryRequest.SpeedKph:F2} km/h");
+
+        using HttpResponseMessage telemetryResponse =
+            await httpClient.PostAsJsonAsync(   
+                $"api/units/{unitId}/telemetry",
+                telemetryRequest,
+                cancellationTokenSource.Token);
+
+        telemetryResponse.EnsureSuccessStatusCode();
+
+        UnitTelemetryDto? telemetry =
+            await telemetryResponse.Content
+                .ReadFromJsonAsync<UnitTelemetryDto>(
+                    cancellationToken:
+                        cancellationTokenSource.Token);
+
+        Console.WriteLine(
+            $"[{DateTimeOffset.Now:HH:mm:ss}] " +
+            $"Heartbeat sent | " +
+            $"{unit?.CallSign} | " +
+            $"Status: {unit?.Status}");
+
+        Console.WriteLine(
+            $"[{DateTimeOffset.Now:HH:mm:ss}] " +
+            $"Telemetry sent | " +
+            $"Battery: {telemetry?.BatteryPercent:F2}% | " +
+            $"Position: {telemetry?.Latitude:F6}, " +
+            $"{telemetry?.Longitude:F6} | " +
+            $"Speed: {telemetry?.SpeedKph:F2} km/h");
+
+        Console.WriteLine();
     }
     catch (HttpRequestException exception)
     {
         Console.WriteLine(
             $"[{DateTimeOffset.Now:HH:mm:ss}] " +
-            $"Could not connect to the API: " +
-            exception.Message);
+            $"API communication failed: {exception.Message}");
     }
     catch (TaskCanceledException)
         when (!cancellationTokenSource.IsCancellationRequested)

@@ -14,6 +14,9 @@ public sealed class CommandTrackDbContext : DbContext
     public DbSet<OperationalUnit> OperationalUnits =>
         Set<OperationalUnit>();
 
+    public DbSet<UnitTelemetry> UnitTelemetry =>
+        Set<UnitTelemetry>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

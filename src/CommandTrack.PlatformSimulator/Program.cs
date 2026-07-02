@@ -2,7 +2,7 @@
 using System.Net.Http.Json;
 using CommandTrack.Shared.Units;
 
-const string apiBaseUrl = "https://localhost:7252/";
+const string apiBaseUrl = "http://localhost:5076/";
 
 Guid unitId = Guid.Parse(
     "89da676e-384e-4bb0-adec-1d4bfac22c8b");

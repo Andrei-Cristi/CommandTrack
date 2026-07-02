@@ -237,17 +237,31 @@ public partial class MainWindow : Window
             }
 
             int onlineCount =
-                units.Count(unit =>
-                    string.Equals(
-                        unit.Status,
-                        "Online",
-                        StringComparison.OrdinalIgnoreCase));
+    units.Count(unit =>
+        string.Equals(
+            unit.Status,
+            "Online",
+            StringComparison.OrdinalIgnoreCase));
 
             int offlineCount =
                 units.Count(unit =>
                     string.Equals(
                         unit.Status,
                         "Offline",
+                        StringComparison.OrdinalIgnoreCase));
+
+            int busyCount =
+                units.Count(unit =>
+                    string.Equals(
+                        unit.Status,
+                        "Busy",
+                        StringComparison.OrdinalIgnoreCase));
+
+            int maintenanceCount =
+                units.Count(unit =>
+                    string.Equals(
+                        unit.Status,
+                        "Maintenance",
                         StringComparison.OrdinalIgnoreCase));
 
             TotalUnitsTextBlock.Text =
@@ -259,11 +273,11 @@ public partial class MainWindow : Window
             OfflineUnitsTextBlock.Text =
                 offlineCount.ToString();
 
-            LastRefreshTextBlock.Text =
-                DateTimeOffset.Now.ToString("HH:mm:ss");
+            BusyUnitsTextBlock.Text =
+                busyCount.ToString();
 
-            StatusTextBlock.Text =
-                $"Loaded {units.Count} operational units.";
+            MaintenanceUnitsTextBlock.Text =
+                maintenanceCount.ToString();
         }
         catch (HttpRequestException exception)
         {

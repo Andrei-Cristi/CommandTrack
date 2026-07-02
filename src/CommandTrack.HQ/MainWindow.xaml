@@ -437,65 +437,98 @@
 
         <!-- Summary cards -->
         <Grid Grid.Row="1"
-              Margin="0,0,0,22">
+      Margin="0,0,0,22">
 
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
-                    Style="{StaticResource DashboardCardStyle}">
-
+            Style="{StaticResource DashboardCardStyle}">
                 <StackPanel>
                     <TextBlock Text="TOTAL UNITS"
-                               FontSize="12"
-                               FontWeight="SemiBold"
-                               Foreground="#8F9BAD"/>
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#8F9BAD"/>
 
                     <TextBlock x:Name="TotalUnitsTextBlock"
-                               Text="0"
-                               Margin="0,8,0,0"
-                               FontSize="32"
-                               FontWeight="Bold"/>
+                       Text="0"
+                       Margin="0,8,0,0"
+                       FontSize="28"
+                       FontWeight="Bold"/>
                 </StackPanel>
             </Border>
 
             <Border Grid.Column="1"
-                    Style="{StaticResource DashboardCardStyle}">
-
+            Style="{StaticResource DashboardCardStyle}">
                 <StackPanel>
                     <TextBlock Text="ONLINE"
-                               FontSize="12"
-                               FontWeight="SemiBold"
-                               Foreground="#8F9BAD"/>
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#8F9BAD"/>
 
                     <TextBlock x:Name="OnlineUnitsTextBlock"
-                               Text="0"
-                               Margin="0,8,0,0"
-                               FontSize="32"
-                               FontWeight="Bold"
-                               Foreground="#4BD58A"/>
+                       Text="0"
+                       Margin="0,8,0,0"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#4BD58A"/>
                 </StackPanel>
             </Border>
 
             <Border Grid.Column="2"
-                    Style="{StaticResource DashboardCardStyle}"
-                    Margin="0">
-
+            Style="{StaticResource DashboardCardStyle}">
                 <StackPanel>
                     <TextBlock Text="OFFLINE"
-                               FontSize="12"
-                               FontWeight="SemiBold"
-                               Foreground="#8F9BAD"/>
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#8F9BAD"/>
 
                     <TextBlock x:Name="OfflineUnitsTextBlock"
-                               Text="0"
-                               Margin="0,8,0,0"
-                               FontSize="32"
-                               FontWeight="Bold"
-                               Foreground="#F06C75"/>
+                       Text="0"
+                       Margin="0,8,0,0"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#F06C75"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="3"
+            Style="{StaticResource DashboardCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="BUSY"
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#8F9BAD"/>
+
+                    <TextBlock x:Name="BusyUnitsTextBlock"
+                       Text="0"
+                       Margin="0,8,0,0"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#E4A13A"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="4"
+            Style="{StaticResource DashboardCardStyle}"
+            Margin="0">
+                <StackPanel>
+                    <TextBlock Text="MAINTENANCE"
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#8F9BAD"/>
+
+                    <TextBlock x:Name="MaintenanceUnitsTextBlock"
+                       Text="0"
+                       Margin="0,8,0,0"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#AE8AE6"/>
                 </StackPanel>
             </Border>
         </Grid>

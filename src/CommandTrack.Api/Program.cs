@@ -13,6 +13,9 @@ builder.Services.AddDbContext<CommandTrackDbContext>(options =>
             "CommandTrackDatabase")));
 
 builder.Services.AddScoped<IUnitService, EfUnitService>();
+
+builder.Services.AddHostedService<UnitOfflineMonitorService>();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

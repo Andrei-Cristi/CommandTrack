@@ -32,5 +32,7 @@ public sealed class OperationalUnitConfiguration
 
         builder.Property(unit => unit.CreatedAtUtc)
             .IsRequired();
+
+        builder.Property(unit => unit.LastSeenAtUtc);
     }
 }

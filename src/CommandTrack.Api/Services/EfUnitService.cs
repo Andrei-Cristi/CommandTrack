@@ -81,5 +81,27 @@ public sealed class EfUnitService : IUnitService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return unit;
+
     }
+    public async Task<OperationalUnit?> RegisterHeartbeatAsync(
+    Guid id,
+    CancellationToken cancellationToken = default)
+    {
+        OperationalUnit? unit =
+            await _dbContext.OperationalUnits.FirstOrDefaultAsync(
+                unit => unit.Id == id,
+                cancellationToken);
+
+        if (unit is null)
+        {
+            return null;
+        }
+
+        unit.RegisterHeartbeat();
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return unit;
+    }
+
 }

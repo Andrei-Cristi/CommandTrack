@@ -5,4 +5,5 @@ public sealed record UnitDto(
     string CallSign,
     string Type,
     string Status,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset? LastSeenAtUtc);

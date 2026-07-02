@@ -52,6 +52,10 @@ public sealed class OperationalUnit
     public void RegisterHeartbeat()
     {
         LastSeenAtUtc = DateTimeOffset.UtcNow;
-        Status = UnitStatus.Online;
+
+        if (Status == UnitStatus.Offline)
+        {
+            Status = UnitStatus.Online;
+        }
     }
 }

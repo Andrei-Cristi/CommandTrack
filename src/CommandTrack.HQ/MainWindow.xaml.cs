@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Controls;
 
 namespace CommandTrack.HQ;
 
@@ -34,9 +35,21 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         UnitsDataGrid.ItemsSource = _units;
+        StatusComboBox.ItemsSource = new[]
+{
+    "Offline",
+    "Online",
+    "Busy",
+    "Maintenance"
+};
 
         Loaded += MainWindow_Loaded;
         RefreshButton.Click += RefreshButton_Click;
+        UnitsDataGrid.SelectionChanged +=
+    UnitsDataGrid_SelectionChanged;
+
+        UpdateStatusButton.Click +=
+            UpdateStatusButton_Click;
 
         _refreshTimer.Tick += RefreshTimer_Tick;
 
@@ -45,6 +58,90 @@ public partial class MainWindow : Window
             _refreshTimer.Stop();
             _httpClient.Dispose();
         };
+    }
+
+    private async void UpdateStatusButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        if (UnitsDataGrid.SelectedItem
+                is not UnitDashboardRow selectedUnit ||
+            StatusComboBox.SelectedItem
+                is not string selectedStatus)
+        {
+            StatusUpdateMessageTextBlock.Text =
+                "Select a unit and a status.";
+
+            return;
+        }
+
+        if (string.Equals(
+                selectedUnit.Status,
+                selectedStatus,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            StatusUpdateMessageTextBlock.Text =
+                $"The unit is already {selectedStatus}.";
+
+            return;
+        }
+
+        UpdateStatusButton.IsEnabled = false;
+        StatusComboBox.IsEnabled = false;
+
+        StatusUpdateMessageTextBlock.Text =
+            "Updating unit status...";
+
+        try
+        {
+            UpdateUnitStatusRequest request =
+                new(selectedStatus);
+
+            using HttpResponseMessage response =
+                await _httpClient.PatchAsJsonAsync(
+                    $"api/units/{selectedUnit.Id}/status",
+                    request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error =
+                    await response.Content.ReadAsStringAsync();
+
+                StatusUpdateMessageTextBlock.Text =
+                    $"Update failed: {(int)response.StatusCode} " +
+                    $"{response.ReasonPhrase}. {error}";
+
+                return;
+            }
+
+            await LoadUnitsAsync();
+
+            StatusUpdateMessageTextBlock.Text =
+                $"Status updated to {selectedStatus}.";
+        }
+        catch (HttpRequestException exception)
+        {
+            StatusUpdateMessageTextBlock.Text =
+                $"Could not connect to the API: {exception.Message}";
+        }
+        catch (TaskCanceledException)
+        {
+            StatusUpdateMessageTextBlock.Text =
+                "The status update request timed out.";
+        }
+        catch (Exception exception)
+        {
+            StatusUpdateMessageTextBlock.Text =
+                $"Unexpected error: {exception.Message}";
+        }
+        finally
+        {
+            bool hasSelection =
+                UnitsDataGrid.SelectedItem is UnitDashboardRow;
+
+            StatusComboBox.IsEnabled = hasSelection;
+            UpdateStatusButton.IsEnabled = hasSelection;
+        }
     }
 
     private async void MainWindow_Loaded(
@@ -68,6 +165,27 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         await LoadUnitsAsync();
+    }
+
+    private void UnitsDataGrid_SelectionChanged(
+    object sender,
+    SelectionChangedEventArgs e)
+    {
+        if (UnitsDataGrid.SelectedItem
+            is not UnitDashboardRow selectedUnit)
+        {
+            StatusComboBox.SelectedItem = null;
+            StatusComboBox.IsEnabled = false;
+            UpdateStatusButton.IsEnabled = false;
+            StatusUpdateMessageTextBlock.Text = string.Empty;
+
+            return;
+        }
+
+        StatusComboBox.IsEnabled = true;
+        UpdateStatusButton.IsEnabled = true;
+        StatusComboBox.SelectedItem = selectedUnit.Status;
+        StatusUpdateMessageTextBlock.Text = string.Empty;
     }
 
     private async Task LoadUnitsAsync()

@@ -51,10 +51,6 @@ public sealed class UnitsController : ControllerBase
         return Ok(MapToDto(unit));
     }
 
-    [HttpPost]
-    [ProducesResponseType(typeof(UnitDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [HttpPost("{id:guid}/heartbeat")]
     [ProducesResponseType(typeof(UnitDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -81,6 +77,11 @@ public sealed class UnitsController : ControllerBase
 
         return Ok(MapToDto(unit));
     }
+
+    [HttpPost]
+    [ProducesResponseType(typeof(UnitDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<UnitDto>> Create(
         CreateUnitRequest request,
         CancellationToken cancellationToken)

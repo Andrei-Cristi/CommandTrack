@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Serviciile aplicației
 builder.Services.AddControllers();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddDbContext<CommandTrackDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString(
@@ -31,6 +33,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 

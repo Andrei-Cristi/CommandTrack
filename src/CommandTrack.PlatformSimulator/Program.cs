@@ -34,6 +34,10 @@ Console.WriteLine("Sending heartbeat and telemetry every 5 seconds.");
 Console.WriteLine("Press Ctrl+C to stop.");
 Console.WriteLine();
 
+await WaitForApiAsync(
+    httpClient,
+    cancellationTokenSource.Token);
+
 while (!cancellationTokenSource.Token.IsCancellationRequested)
 {
     try
@@ -181,4 +185,61 @@ static string LoadApiBaseUrl()
     }
 
     return apiBaseUri.AbsoluteUri;
+}
+
+static async Task WaitForApiAsync(
+    HttpClient httpClient,
+    CancellationToken cancellationToken)
+{
+    Console.WriteLine("Waiting for the API to become ready.");
+
+    while (!cancellationToken.IsCancellationRequested)
+    {
+        try
+        {
+            using HttpResponseMessage response =
+                await httpClient.GetAsync(
+                    "health",
+                    cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("API is ready.");
+                Console.WriteLine();
+                return;
+            }
+
+            Console.WriteLine(
+                $"API health check returned " +
+                $"{(int)response.StatusCode}. Retrying...");
+        }
+        catch (HttpRequestException)
+        {
+            Console.WriteLine(
+                "API is not available yet. Retrying...");
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            Console.WriteLine(
+                "API health check timed out. Retrying...");
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(
+                TimeSpan.FromSeconds(2),
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+    }
 }

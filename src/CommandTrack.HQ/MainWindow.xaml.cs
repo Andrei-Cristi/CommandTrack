@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -14,8 +15,8 @@ namespace CommandTrack.HQ;
 
 public partial class MainWindow : Window
 {
-    private const string ApiBaseUrl =
-        "http://localhost:5076/";
+    private static readonly string ApiBaseUrl =
+        LoadApiBaseUrl();
 
     private readonly HttpClient _httpClient = new()
     {
@@ -36,6 +37,8 @@ public partial class MainWindow : Window
 
     private bool _isLoading;
 
+    private bool _isUpdatingStatus;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -49,6 +52,9 @@ public partial class MainWindow : Window
             "Busy",
             "Maintenance"
         };
+
+        StatusComboBox.SelectionChanged +=
+            StatusComboBox_SelectionChanged;
 
         Loaded += MainWindow_Loaded;
 
@@ -73,6 +79,37 @@ public partial class MainWindow : Window
             _refreshTimer.Stop();
             _httpClient.Dispose();
         };
+    }
+
+    private static string LoadApiBaseUrl()
+    {
+        string configurationPath = System.IO.Path.Combine(
+            AppContext.BaseDirectory,
+            "appsettings.json");
+
+        using System.IO.FileStream configurationFile =
+            System.IO.File.OpenRead(configurationPath);
+
+        using JsonDocument configuration =
+            JsonDocument.Parse(configurationFile);
+
+        string? configuredUrl = configuration.RootElement
+            .GetProperty("Api")
+            .GetProperty("BaseUrl")
+            .GetString();
+
+        if (!Uri.TryCreate(
+                configuredUrl,
+                UriKind.Absolute,
+                out Uri? apiBaseUri) ||
+            (apiBaseUri.Scheme != Uri.UriSchemeHttp &&
+             apiBaseUri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new System.IO.InvalidDataException(
+                "Api:BaseUrl must be a valid HTTP or HTTPS URL.");
+        }
+
+        return apiBaseUri.AbsoluteUri;
     }
 
     private async void MainWindow_Loaded(
@@ -128,11 +165,36 @@ public partial class MainWindow : Window
         StatusComboBox.SelectedItem =
             selectedUnit.Status;
 
+        UpdateStatusButtonState();
+
         StatusUpdateMessageTextBlock.Text =
             string.Empty;
 
         _ = LoadSelectedUnitHistoryAsync(
             selectedUnit.Id);
+    }
+
+    private void StatusComboBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        UpdateStatusButtonState();
+    }
+
+    private void UpdateStatusButtonState()
+    {
+        bool statusChanged =
+            UnitsDataGrid.SelectedItem
+                is UnitDashboardRow selectedUnit &&
+            StatusComboBox.SelectedItem
+                is string selectedStatus &&
+            !string.Equals(
+                selectedUnit.Status,
+                selectedStatus,
+                StringComparison.OrdinalIgnoreCase);
+
+        UpdateStatusButton.IsEnabled =
+            statusChanged && !_isUpdatingStatus;
     }
 
     private async void UpdateStatusButton_Click(
@@ -161,6 +223,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        _isUpdatingStatus = true;
         UpdateStatusButton.IsEnabled = false;
         StatusComboBox.IsEnabled = false;
 
@@ -212,6 +275,8 @@ public partial class MainWindow : Window
         }
         finally
         {
+            _isUpdatingStatus = false;
+
             bool hasSelection =
                 UnitsDataGrid.SelectedItem
                 is UnitDashboardRow;
@@ -219,8 +284,7 @@ public partial class MainWindow : Window
             StatusComboBox.IsEnabled =
                 hasSelection;
 
-            UpdateStatusButton.IsEnabled =
-                hasSelection;
+            UpdateStatusButtonState();
         }
     }
 

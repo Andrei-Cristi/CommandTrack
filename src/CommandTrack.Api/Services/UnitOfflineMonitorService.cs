@@ -74,29 +74,24 @@ public sealed class UnitOfflineMonitorService : BackgroundService
         DateTimeOffset offlineCutoff =
             DateTimeOffset.UtcNow - OfflineThreshold;
 
-        var inactiveUnits =
+        int updatedUnitCount =
             await dbContext.OperationalUnits
                 .Where(unit =>
                     unit.LastSeenAtUtc.HasValue &&
                     unit.LastSeenAtUtc.Value < offlineCutoff &&
                     unit.Status != UnitStatus.Offline)
-                .ToListAsync(cancellationToken);
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        unit => unit.Status,
+                        UnitStatus.Offline),
+                    cancellationToken);
 
-        if (inactiveUnits.Count == 0)
+        if (updatedUnitCount > 0)
         {
-            return;
-        }
-
-        foreach (var unit in inactiveUnits)
-        {
-            unit.UpdateStatus(UnitStatus.Offline);
-
             _logger.LogInformation(
-                "Unit {CallSign} was marked Offline. Last seen: {LastSeenAtUtc}",
-                unit.CallSign,
-                unit.LastSeenAtUtc);
+                "Marked {UnitCount} inactive unit(s) Offline. Cutoff: {OfflineCutoff}",
+                updatedUnitCount,
+                offlineCutoff);
         }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

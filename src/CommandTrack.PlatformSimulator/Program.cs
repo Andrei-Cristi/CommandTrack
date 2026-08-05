@@ -1,9 +1,10 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using CommandTrack.Shared.Telemetry;
 using CommandTrack.Shared.Units;
 
-const string apiBaseUrl = "http://localhost:5076/";
+string apiBaseUrl = LoadApiBaseUrl();
 
 Guid unitId = Guid.Parse(
     "89da676e-384e-4bb0-adec-1d4bfac22c8b");
@@ -150,3 +151,34 @@ while (!cancellationTokenSource.Token.IsCancellationRequested)
 
 Console.WriteLine();
 Console.WriteLine("Platform Simulator stopped.");
+
+static string LoadApiBaseUrl()
+{
+    string configurationPath = Path.Combine(
+        AppContext.BaseDirectory,
+        "appsettings.json");
+
+    using FileStream configurationFile =
+        File.OpenRead(configurationPath);
+
+    using JsonDocument configuration =
+        JsonDocument.Parse(configurationFile);
+
+    string? configuredUrl = configuration.RootElement
+        .GetProperty("Api")
+        .GetProperty("BaseUrl")
+        .GetString();
+
+    if (!Uri.TryCreate(
+            configuredUrl,
+            UriKind.Absolute,
+            out Uri? apiBaseUri) ||
+        (apiBaseUri.Scheme != Uri.UriSchemeHttp &&
+         apiBaseUri.Scheme != Uri.UriSchemeHttps))
+    {
+        throw new InvalidDataException(
+            "Api:BaseUrl must be a valid HTTP or HTTPS URL.");
+    }
+
+    return apiBaseUri.AbsoluteUri;
+}

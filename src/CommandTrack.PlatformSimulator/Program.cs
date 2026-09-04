@@ -6,8 +6,7 @@ using CommandTrack.Shared.Units;
 
 string apiBaseUrl = LoadApiBaseUrl();
 
-Guid unitId = Guid.Parse(
-    "89da676e-384e-4bb0-adec-1d4bfac22c8b");
+Guid unitId = LoadUnitId();
 
 double batteryPercent = 95.0;
 double latitude = 44.4268;
@@ -243,3 +242,29 @@ static async Task WaitForApiAsync(
         }
     }
 }
+static Guid LoadUnitId()
+    {
+        string configurationPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "appsettings.json");
+
+        using FileStream configurationFile =
+            File.OpenRead(configurationPath);
+
+        using JsonDocument configuration =
+            JsonDocument.Parse(configurationFile);
+
+        string? configuredId = configuration.RootElement
+            .GetProperty("Simulator")
+            .GetProperty("UnitId")
+            .GetString();
+
+        if (!Guid.TryParse(configuredId, out Guid unitId) ||
+            unitId == Guid.Empty)
+        {
+            throw new InvalidDataException(
+                "Simulator:UnitId must be a valid, non-empty GUID.");
+        }
+
+        return unitId;
+    }

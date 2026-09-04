@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CommandTrack — Hartă</title>
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="anonymous">
+
+    <style>
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin="anonymous"></script>
+
+    <script>
+        const map = L.map("map").setView([44.4268, 26.1025], 13);
+
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const resizeObserver = new ResizeObserver(() => {
+            map.invalidateSize({ pan: false });
+        });
+
+        resizeObserver.observe(document.getElementById("map"));
+        const unitMarkers = new Map();
+
+window.updateUnits = function (units) {
+    const currentIds = new Set();
+
+    for (const unit of units) {
+        if (!Number.isFinite(unit.latitude) ||
+            !Number.isFinite(unit.longitude) ||
+            Math.abs(unit.latitude) > 90 ||
+            Math.abs(unit.longitude) > 180) {
+            continue;
+        }
+
+        currentIds.add(unit.id);
+
+        const position = [unit.latitude, unit.longitude];
+        let marker = unitMarkers.get(unit.id);
+
+        if (!marker) {
+    marker = L.marker(position).addTo(map);
+
+    marker.on("click", () => {
+        window.chrome.webview.postMessage({
+            type: "unitSelected",
+            unitId: unit.id
+        });
+    });
+
+    unitMarkers.set(unit.id, marker);
+}
+
+        marker.setLatLng(position);
+
+        const popupContent = document.createElement("div");
+        popupContent.textContent =
+            `${unit.callSign} | ${unit.status} — ultima poziție cunoscută`;
+
+        if (marker.getPopup()) {
+            marker.setPopupContent(popupContent);
+        } else {
+            marker.bindPopup(popupContent);
+        }
+    }
+
+    for (const [id, marker] of unitMarkers) {
+        if (!currentIds.has(id)) {
+            map.removeLayer(marker);
+            unitMarkers.delete(id);
+        }
+    }
+};
+        window.focusUnit = function (unitId) {
+    const marker = unitMarkers.get(unitId);
+
+    if (!marker) {
+        return false;
+    }
+
+    map.setView(
+        marker.getLatLng(),
+        Math.max(map.getZoom(), 16)
+    );
+
+    marker.openPopup();
+
+    return true;
+};
+    </script>
+</body>
+</html>

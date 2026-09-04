@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Microsoft.Web.WebView2.Core;
 
 namespace CommandTrack.HQ;
 
@@ -111,7 +112,235 @@ public partial class MainWindow : Window
 
         return apiBaseUri.AbsoluteUri;
     }
+    private bool _mapInitializationStarted;
+    private Guid? _lastFocusedMapUnitId;
 
+    private async void UnitMapWebView_Loaded(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (_mapInitializationStarted)
+            return;
+
+        _mapInitializationStarted = true;
+
+        try
+        {
+            string assetsPath = System.IO.Path.Combine(
+                AppContext.BaseDirectory,
+                "Assets");
+
+            string mapPath = System.IO.Path.Combine(
+                assetsPath,
+                "map.html");
+
+            if (!System.IO.File.Exists(mapPath))
+            {
+                throw new System.IO.FileNotFoundException(
+                    "Map file was not found.",
+                    mapPath);
+            }
+
+            await UnitMapWebView.EnsureCoreWebView2Async();
+
+            var browser = UnitMapWebView.CoreWebView2;
+
+            browser.NavigationStarting +=
+    UnitMapWebView_NavigationStarting;
+
+            browser.NewWindowRequested +=
+                UnitMapWebView_NewWindowRequested;
+
+            browser.Settings.UserAgent +=
+                " CommandTrack/1.0 (+https://github.com/Andrei-Cristi/CommandTrack)";
+
+            browser.SetVirtualHostNameToFolderMapping(
+                "commandtrack.example",
+                assetsPath,
+                CoreWebView2HostResourceAccessKind.Deny);
+
+            browser.DOMContentLoaded += async (_, _) =>
+            {
+                _lastFocusedMapUnitId = null;
+                await UpdateMapUnitsAsync();
+            };
+
+            browser.WebMessageReceived +=
+    UnitMapWebView_WebMessageReceived;
+
+            browser.Navigate("https://commandtrack.example/map.html");
+        }
+        catch (Exception ex)
+        {
+            _mapInitializationStarted = false;
+
+            MessageBox.Show(
+                this,
+                $"Could not initialize the map:\n{ex.Message}",
+                "CommandTrack HQ",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+    private async Task UpdateMapUnitsAsync()
+    {
+        try
+        {
+            var browser = UnitMapWebView.CoreWebView2;
+
+            if (browser is null ||
+                browser.Source != "https://commandtrack.example/map.html")
+            {
+                return;
+            }
+
+            var mapUnits = _units
+                .Where(unit =>
+                    unit.Latitude is double latitude &&
+                    double.IsFinite(latitude) &&
+                    Math.Abs(latitude) <= 90 &&
+                    unit.Longitude is double longitude &&
+                    double.IsFinite(longitude) &&
+                    Math.Abs(longitude) <= 180)
+                .Select(unit => new
+                {
+                    id = unit.Id.ToString(),
+                    callSign = unit.CallSign,
+                    status = unit.Status,
+                    latitude = unit.Latitude,
+                    longitude = unit.Longitude
+                })
+                .ToArray();
+
+            string json = JsonSerializer.Serialize(mapUnits);
+
+            await browser.ExecuteScriptAsync(
+                "if (location.href === 'https://commandtrack.example/map.html' " +
+                "&& typeof window.updateUnits === 'function') " +
+                $"{{ window.updateUnits({json}); }}");
+            Guid? selectedUnitId =
+    (UnitsDataGrid.SelectedItem as UnitDashboardRow)?.Id;
+
+            if (selectedUnitId == _lastFocusedMapUnitId)
+                return;
+
+            _lastFocusedMapUnitId = null;
+
+            if (!selectedUnitId.HasValue)
+                return;
+
+            string unitIdJson = JsonSerializer.Serialize(
+                selectedUnitId.Value.ToString());
+
+            string result = await browser.ExecuteScriptAsync(
+                "location.href === 'https://commandtrack.example/map.html' && " +
+                "typeof window.focusUnit === 'function' && " +
+                $"window.focusUnit({unitIdJson});");
+
+            if (result == "true" &&
+                (UnitsDataGrid.SelectedItem as UnitDashboardRow)?.Id == selectedUnitId)
+            {
+                _lastFocusedMapUnitId = selectedUnitId;
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusTextBlock.Text =
+                $"Could not update map markers: {ex.Message}";
+        }
+    }
+
+    private void UnitMapWebView_WebMessageReceived(
+    object? sender,
+    CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        if (e.Source != "https://commandtrack.example/map.html")
+            return;
+
+        try
+        {
+            using JsonDocument message =
+                JsonDocument.Parse(e.WebMessageAsJson);
+
+            JsonElement root = message.RootElement;
+
+            if (root.ValueKind != JsonValueKind.Object ||
+                !root.TryGetProperty("type", out JsonElement type) ||
+                type.ValueKind != JsonValueKind.String ||
+                type.GetString() != "unitSelected" ||
+                !root.TryGetProperty("unitId", out JsonElement id) ||
+                id.ValueKind != JsonValueKind.String ||
+                !id.TryGetGuid(out Guid unitId))
+            {
+                return;
+            }
+
+            UnitDashboardRow? selectedUnit =
+                _units.FirstOrDefault(unit => unit.Id == unitId);
+
+            if (selectedUnit is not null)
+            {
+                UnitsDataGrid.SelectedItem = selectedUnit;
+            }
+        }
+        catch (JsonException)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "Ignored an invalid message from the map.");
+        }
+    }
+    private void UnitMapWebView_NavigationStarting(
+    object? sender,
+    CoreWebView2NavigationStartingEventArgs e)
+    {
+        if (e.Uri == "https://commandtrack.example/map.html")
+            return;
+
+        e.Cancel = true;
+
+        if (e.IsUserInitiated)
+        {
+            OpenMapLinkInBrowser(e.Uri);
+        }
+    }
+
+    private void UnitMapWebView_NewWindowRequested(
+        object? sender,
+        CoreWebView2NewWindowRequestedEventArgs e)
+    {
+        e.Handled = true;
+
+        if (e.IsUserInitiated)
+        {
+            OpenMapLinkInBrowser(e.Uri);
+        }
+    }
+
+    private void OpenMapLinkInBrowser(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) ||
+            uri.Scheme != Uri.UriSchemeHttps ||
+            (uri.Host != "www.openstreetmap.org" &&
+             uri.Host != "leafletjs.com"))
+        {
+            return;
+        }
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = uri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+        }
+        catch (Exception ex)
+        {
+            StatusTextBlock.Text =
+                $"Could not open the external link: {ex.Message}";
+        }
+    }
     private async void MainWindow_Loaded(
         object sender,
         RoutedEventArgs e)
@@ -139,6 +368,10 @@ public partial class MainWindow : Window
         object sender,
         SelectionChangedEventArgs e)
     {
+        if (!_isLoading)
+        {
+            _ = UpdateMapUnitsAsync();
+        }
         if (UnitsDataGrid.SelectedItem
             is not UnitDashboardRow selectedUnit)
         {
@@ -393,6 +626,7 @@ public partial class MainWindow : Window
 
             StatusTextBlock.Text =
                 $"Loaded {units.Count} operational units.";
+            await UpdateMapUnitsAsync();
         }
         catch (HttpRequestException exception)
         {
